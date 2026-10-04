@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Название приложения: поменяй здесь одну строку, если захочешь другое имя -->
+    <string name="app_name">FCA</string>
+    <string name="app_tagline">music · vibes · you</string>
+    <string name="notification_channel_name">Воспроизведение</string>
+</resources>
