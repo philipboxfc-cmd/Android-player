@@ -84,7 +84,7 @@ import app.fca.player.ui.navigation.Routes
 import app.fca.player.ui.theme.readableOn
 import kotlinx.coroutines.launch
 
-private val tabs = listOf("Треки", "Альбомы", "Артисты", "Плейлисты")
+private val tabs = listOf("Плейлисты", "Треки", "Альбомы", "Артисты")
 
 enum class TrackSort(val title: String) {
     TITLE("По названию"),
@@ -163,10 +163,10 @@ fun LibraryScreen(nav: NavHostController) {
             modifier = Modifier.fillMaxSize().padding(inner),
         ) { page ->
             when (page) {
-                0 -> TracksTab(nav)
-                1 -> AlbumsTab(nav)
-                2 -> ArtistsTab(nav)
-                else -> PlaylistsTab(nav)
+                0 -> PlaylistsTab(nav)
+                1 -> TracksTab(nav)
+                2 -> AlbumsTab(nav)
+                else -> ArtistsTab(nav)
             }
         }
     }
@@ -350,7 +350,22 @@ private fun PlaylistsTab(nav: NavHostController) {
     val playlists by container.playlists.playlists.collectAsStateWithLifecycle()
     val playerState by container.player.state.collectAsStateWithLifecycle()
 
+    var batteryHintDismissed by remember { mutableStateOf(container.settings.batteryHintDismissed) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val showBatteryHint = !batteryHintDismissed && isAggressiveBatteryVendor() && !isIgnoringBatteryOptimizations(context)
+
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (showBatteryHint) {
+            item(key = "battery_hint") {
+                BatteryHintCard(
+                    onOpenSettings = { openBatterySettings(context) },
+                    onDismiss = {
+                        batteryHintDismissed = true
+                        container.settings.batteryHintDismissed = true
+                    },
+                )
+            }
+        }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 ActionCard(
@@ -406,6 +421,55 @@ private fun ActionCard(icon: androidx.compose.ui.graphics.vector.ImageVector, ti
             Spacer(Modifier.height(10.dp))
             Text(title, style = MaterialTheme.typography.titleSmall)
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
+        }
+    }
+}
+
+// ---------------- Подсказка про энергосбережение (Huawei / Honor / Xiaomi и т.п.) ----------------
+
+private fun isAggressiveBatteryVendor(): Boolean {
+    val m = android.os.Build.MANUFACTURER.lowercase()
+    val b = android.os.Build.BRAND.lowercase()
+    return listOf("huawei", "honor", "xiaomi", "redmi", "poco", "oppo", "vivo", "realme", "oneplus", "meizu", "asus")
+        .any { it in m || it in b }
+}
+
+private fun isIgnoringBatteryOptimizations(context: android.content.Context): Boolean {
+    val pm = context.getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager ?: return true
+    return pm.isIgnoringBatteryOptimizations(context.packageName)
+}
+
+private fun openBatterySettings(context: android.content.Context) {
+    val request = android.content.Intent(
+        android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+        android.net.Uri.parse("package:${context.packageName}"),
+    )
+    val fallback = android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+    runCatching { context.startActivity(request) }
+        .onFailure { runCatching { context.startActivity(fallback) } }
+}
+
+@Composable
+private fun BatteryHintCard(onOpenSettings: () -> Unit, onDismiss: () -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        shape = MaterialTheme.shapes.large,
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Text("Плеер на экране блокировки", style = MaterialTheme.typography.titleSmall)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Чтобы уведомление с плеером держалось на экране блокировки и музыка не обрывалась в фоне, " +
+                    "разреши приложению работать без ограничений батареи. На Huawei/Honor также зайди в " +
+                    "Настройки → Батарея → Запуск приложений → FCA → «Управлять вручную» и включи все три пункта.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.material3.Button(onClick = onOpenSettings) { Text("Разрешить") }
+                androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Позже") }
+            }
         }
     }
 }

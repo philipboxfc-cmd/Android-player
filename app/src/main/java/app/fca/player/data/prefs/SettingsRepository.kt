@@ -35,9 +35,15 @@ class SettingsRepository(context: Context) {
         get() = prefs.getString(KEY_TRACK_SORT, "TITLE") ?: "TITLE"
         set(value) = prefs.edit().putString(KEY_TRACK_SORT, value).apply()
 
+    /** Пользователь закрыл подсказку про энергосбережение. */
+    var batteryHintDismissed: Boolean
+        get() = prefs.getBoolean(KEY_BATTERY_HINT, false)
+        set(value) = prefs.edit().putBoolean(KEY_BATTERY_HINT, value).apply()
+
     private companion object {
         const val KEY_EQ = "eq_settings"
         const val KEY_LAST_PLAYLIST = "last_playlist"
         const val KEY_TRACK_SORT = "track_sort"
+        const val KEY_BATTERY_HINT = "battery_hint_dismissed"
     }
 }
