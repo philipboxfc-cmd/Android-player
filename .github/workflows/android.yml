@@ -35,3 +35,15 @@ jobs:
         with:
           name: FCA-release
           path: app/build/outputs/apk/release/*.apk
+
+      - name: Upload EQ debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FCA-EQ-debug
+          path: eq/build/outputs/apk/debug/*.apk
+
+      - name: Upload EQ release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FCA-EQ-release
+          path: eq/build/outputs/apk/release/*.apk

@@ -22,3 +22,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "FCA"
 include(":app")
+include(":eq")
